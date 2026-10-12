@@ -548,20 +548,20 @@ function getItemStats(item) {
   return out;
 }
 
-/* ★ 物品评分（用于自动装备判断） */
-const RARITY_BONUS = { common:0, good:10, rare:30, epic:60, gold:120 };
+/* ★ 物品评分（用于自动装备判断）
+   优先级：吸血 > 攻击 > 范围 > 速度 > 暴击
+   大权重乘法：权重之间拉开数量级，确保严格按优先级比较 */
 function scoreItem(item) {
   const def = ITEM_DEFS[item.defId];
   if (!def) return 0;
   const st = getItemStats(item);
-  const rarBonus = RARITY_BONUS[def.rarity] || 0;
   let score = 0;
-  score += (st.atk       || 0) * 4;       // 攻击力权重
-  score += (st.crit      || 0) * 500;     // 暴击率权重（1% = 5分）
-  score += (st.range     || 0) * 3;       // 攻击范围（同时影响拾取/旋风）
-  score += (st.speed     || 0) * 1;       // 移动速度
-  score += (st.lifesteal || 0) * 500;     // 吸血权重（1% = 5分）
-  return score + rarBonus;
+  score += (st.lifesteal || 0) * 1e10;   // 吸血最高优先
+  score += (st.atk       || 0) * 1e5;    // 攻击第二
+  score += (st.range     || 0) * 100;    // 范围第三
+  score += (st.speed     || 0) * 1;      // 速度第四
+  score += (st.crit      || 0) * 0.001;  // 暴击最后
+  return score;
 }
 
 /* ★ 自动装备最强装备 */
@@ -655,7 +655,6 @@ function unequip(slot) {
   inventory.push(it);
   computeStats();
   renderPanel();
-  /* 卸下后自动装备可能又会把它装回来（如果还是最强的），所以这里不自动重装 */
 }
 
 const panelEl   = document.getElementById('panel');
@@ -1521,10 +1520,12 @@ function autoCombat() {
       player.angle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
     }
   }
+  /* ★ 自动普攻：触发范围扩大到 2 倍，应对剑气/旋风的击退
+       实际命中判定仍按真实攻击范围在 processAttackHits 里处理 */
   if (player.atk.cd <= 0 && !player.atk.active && nearest) {
     const R = currentRange();
     const dist = Math.hypot(nearest.x - player.x, nearest.y - player.y);
-    if (dist < R + nearest.r) {
+    if (dist < R * 2 + nearest.r) {
       player.atk.active = true;
       player.atk.t = 0;
       player.atk.cd = ATK.cd;
@@ -2668,7 +2669,7 @@ function resetGame() {
   equipped.boots = null;
   computeStats();
   renderPanel();
-  /* ★ 初始也自动装备最强（会把基础四件穿上） */
+  /* 初始也自动装备最强（会把基础四件穿上） */
   autoEquipBest(true);
   panelOpen = false;
   panelEl.classList.remove('open');
