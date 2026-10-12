@@ -1607,6 +1607,8 @@ function update(dt) {
   if (player.hurtFlash > 0) player.hurtFlash -= dt;
   if (player.invuln > 0) player.invuln -= dt;
   if (player.skill1.cd > 0) player.skill1.cd = Math.max(0, player.skill1.cd - dt);
+  /* ★ 修复：补回普攻冷却递减（之前漏掉导致普攻只触发一次） */
+  if (player.atk.cd > 0) player.atk.cd = Math.max(0, player.atk.cd - dt);
   updateSkillE(dt);
 
   if (GAME.mode === 'battle') {
