@@ -2,12 +2,13 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
 <title>幸存者试炼 · 正式版</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#1a2616;
-    font-family:system-ui,"Microsoft YaHei",sans-serif;}
-  canvas{display:block;cursor:crosshair;}
+    font-family:system-ui,"Microsoft YaHei",sans-serif;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+  canvas{display:block;cursor:crosshair;touch-action:none;}
 
   #errBox{
     position:fixed;left:12px;top:12px;z-index:99;max-width:70vw;
@@ -21,6 +22,7 @@
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     background:radial-gradient(circle at 50% 45%, #22331c 0%, #0a1108 75%);
     color:#e8f5e0;text-align:center;
+    padding:20px;box-sizing:border-box;
   }
   #screen.hidden{display:none;}
 
@@ -50,8 +52,41 @@
   }
   #screen .subtitle b{color:#a8e06b;font-weight:600;}
 
+  .main-menu{
+    display:flex;gap:22px;margin-bottom:32px;justify-content:center;flex-wrap:wrap;
+  }
+  #screen .menu-btn{
+    padding:18px 52px;border-radius:14px;border:2px solid;
+    font-size:17px;font-weight:700;letter-spacing:3px;
+    cursor:pointer;font-family:inherit;
+    transition:transform .14s, box-shadow .14s;
+  }
+  #screen .menu-btn.battle{
+    color:#0e1a08; border-color:#a8e06b;
+    background:linear-gradient(170deg,#c8f58e,#7cc048);
+    box-shadow:0 12px 34px rgba(120,210,60,.4),
+               inset 0 1px 0 rgba(255,255,255,.55);
+  }
+  #screen .menu-btn.battle:hover{
+    transform:translateY(-3px);
+    box-shadow:0 20px 44px rgba(140,220,80,.55),
+               inset 0 1px 0 rgba(255,255,255,.65);
+  }
+  #screen .menu-btn.train{
+    color:#fff4dc; border-color:#ffb84a;
+    background:linear-gradient(170deg,#ffcf6b,#e08a20);
+    box-shadow:0 12px 34px rgba(220,140,40,.4),
+               inset 0 1px 0 rgba(255,255,255,.5);
+  }
+  #screen .menu-btn.train:hover{
+    transform:translateY(-3px);
+    box-shadow:0 20px 44px rgba(240,170,50,.55),
+               inset 0 1px 0 rgba(255,255,255,.65);
+  }
+  #screen .menu-btn:active{transform:translateY(1px);}
+
   .talents{
-    display:flex;gap:22px;margin-bottom:32px;justify-content:center;
+    display:flex;gap:22px;margin-bottom:32px;justify-content:center;flex-wrap:wrap;
   }
   .talent-card{
     width:250px;padding:24px 20px 22px;border-radius:16px;
@@ -88,7 +123,7 @@
   }
   #screen .stats span{color:#ffd94a;font-weight:700;font-size:17px;}
 
-  #screen button{
+  #screen button.retry-btn{
     padding:16px 48px;border-radius:14px;border:2px solid #a8e06b;
     font-size:17px;font-weight:700;letter-spacing:3px;
     color:#0e1a08;cursor:pointer;font-family:inherit;
@@ -97,12 +132,12 @@
                inset 0 1px 0 rgba(255,255,255,.55);
     transition:transform .14s,box-shadow .14s;
   }
-  #screen button:hover{
+  #screen button.retry-btn:hover{
     transform:translateY(-3px);
     box-shadow:0 20px 44px rgba(140,220,80,.55),
                inset 0 1px 0 rgba(255,255,255,.65);
   }
-  #screen button:active{transform:translateY(1px);}
+  #screen button.retry-btn:active{transform:translateY(1px);}
 
   #screen .hint{
     margin-top:22px;font-size:12.5px;color:rgba(180,200,170,.4);
@@ -114,6 +149,7 @@
     display:none;align-items:center;justify-content:center;
     background:rgba(4,9,5,.72);
     color:#e6f0e0;user-select:none;
+    padding:16px;box-sizing:border-box;
   }
   #panel.open{display:flex;}
 
@@ -235,23 +271,166 @@
     margin-left:4px;letter-spacing:.2px;
   }
   .tt-desc{font-size:11.5px;line-height:1.55;color:rgba(200,215,195,.55);}
+
+  /* ============================================================
+     游戏内顶部按钮（返回主菜单 / 打开背包）
+     ============================================================ */
+  .top-btn{
+    position:fixed;
+    top:16px;
+    width:54px;height:54px;
+    border-radius:14px;
+    border:2px solid rgba(168,224,107,.5);
+    background:rgba(15,25,12,.85);
+    color:#eaf5dd;
+    font-size:24px;
+    cursor:pointer;
+    display:none;
+    align-items:center;justify-content:center;
+    z-index:40;
+    user-select:none;-webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    transition:transform .1s,background .1s,box-shadow .1s;
+    box-shadow:0 4px 14px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);
+    font-family:inherit;
+  }
+  .top-btn:hover{background:rgba(60,100,45,.9);}
+  .top-btn:active{transform:scale(0.92);}
+  #btnHome{left:16px;}
+  #btnBag{right:16px;}
+
+  /* ============================================================
+     移动端控制 UI（仅触摸设备显示）
+     ============================================================ */
+  #mobileUI{display:none;}
+  @media (pointer:coarse){
+    #mobileUI{display:block;}
+  }
+
+  /* 虚拟摇杆 */
+  #joystick{
+    position:fixed;
+    left:24px;
+    bottom:24px;
+    width:150px;height:150px;
+    z-index:35;
+    touch-action:none;
+    user-select:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #joystickBase{
+    position:absolute;inset:0;
+    border-radius:50%;
+    background:radial-gradient(circle at 50% 50%, rgba(35,55,28,.55), rgba(12,20,10,.75));
+    border:3px solid rgba(168,224,107,.35);
+    box-shadow:inset 0 0 24px rgba(0,0,0,.6),
+               0 0 24px rgba(0,0,0,.4);
+  }
+  #joystickKnob{
+    position:absolute;
+    left:50%;top:50%;
+    width:64px;height:64px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #d8ffa8, #7cc048 60%, #4d8a20);
+    border:2px solid rgba(220,255,170,.85);
+    transform:translate(-50%,-50%);
+    box-shadow:0 6px 18px rgba(0,0,0,.6),
+               inset 0 2px 4px rgba(255,255,255,.4);
+    pointer-events:none;
+    transition:transform .05s linear;
+  }
+
+  /* 圆形操作按钮 */
+  .action-btn{
+    position:fixed;
+    border-radius:50%;
+    border:3px solid;
+    color:#fff;
+    font-weight:800;
+    cursor:pointer;
+    display:flex;
+    align-items:center;justify-content:center;
+    z-index:36;
+    user-select:none;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:none;
+    transition:transform .08s;
+    font-family:system-ui,"Microsoft YaHei",sans-serif;
+    box-shadow:0 6px 20px rgba(0,0,0,.55),
+               inset 0 2px 0 rgba(255,255,255,.25);
+  }
+  .action-btn:active{transform:scale(0.92);}
+
+  #btnAttack{
+    right:28px;
+    bottom:32px;
+    width:118px;height:118px;
+    font-size:46px;
+    border-color:rgba(255,180,120,.85);
+    background:radial-gradient(circle at 40% 32%, #ff8a5a, #d23816 65%, #8a1e08);
+  }
+  #btnQ, #btnE{
+    width:76px;height:76px;
+    font-size:24px;
+    letter-spacing:1px;
+  }
+  #btnQ{
+    right:170px;
+    bottom:36px;
+    border-color:rgba(140,225,255,.85);
+    background:radial-gradient(circle at 40% 32%, #6cb8ff, #2a70c0 65%, #0f3a6e);
+  }
+  #btnE{
+    right:38px;
+    bottom:176px;
+    border-color:rgba(180,240,130,.85);
+    background:radial-gradient(circle at 40% 32%, #9ee060, #4f9228 65%, #2a5a10);
+  }
+
+  /* 小屏幕适配 */
+  @media (max-width:480px){
+    #joystick{width:120px;height:120px;}
+    #joystickKnob{width:52px;height:52px;}
+    #btnAttack{width:96px;height:96px;font-size:38px;right:22px;bottom:26px;}
+    #btnQ,#btnE{width:64px;height:64px;font-size:20px;}
+    #btnQ{right:140px;bottom:30px;}
+    #btnE{right:30px;bottom:148px;}
+    .top-btn{width:46px;height:46px;font-size:20px;}
+  }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="errBox"></div>
 
+<!-- ============ 游戏内顶部按钮 ============ -->
+<button id="btnHome" class="top-btn" title="返回主菜单">🏠</button>
+<button id="btnBag" class="top-btn" title="背包">🎒</button>
+
+<!-- ============ 移动端控制 UI ============ -->
+<div id="mobileUI">
+  <div id="joystick">
+    <div id="joystickBase"></div>
+    <div id="joystickKnob"></div>
+  </div>
+  <button id="btnAttack" class="action-btn">⚔</button>
+  <button id="btnQ" class="action-btn">Q</button>
+  <button id="btnE" class="action-btn">E</button>
+</div>
+
 <div id="screen">
   <h1 id="screenTitle">幸存者试炼</h1>
   <div class="subtitle" id="screenSub">
     WASD 移动 · 鼠标左键 / 空格 攻击<br>
-    <b>Q</b> 剑气 &nbsp;·&nbsp; <b>E</b> 旋风 &nbsp;·&nbsp; <b>I</b> 背包 / 装备<br><br>
-    怪物源源不断袭来，每 <b>120 秒</b> 刷新一位 <b>BOSS</b>。<br>
-    击杀 <b>第三位 BOSS</b> 即为胜利。<br>
-    捡到<b>相同装备</b>会升级（每级 +20% 属性，<b>无上限</b>）。
+    <b>Q</b> 剑气 &nbsp;·&nbsp; <b>E</b> 旋风 &nbsp;·&nbsp; <b>I</b> 背包 / 装备
   </div>
 
-  <div class="talents" id="talentArea">
+  <div class="main-menu" id="mainMenuArea">
+    <button class="menu-btn battle" data-mode="battle">⚔ 开始游戏</button>
+    <button class="menu-btn train" data-mode="train">🎯 训练模式</button>
+  </div>
+
+  <div class="talents" id="talentArea" style="display:none;">
     <div class="talent-card" data-talent="aura"
          style="--tcolor:#7fd0ff;--tglow:rgba(127,208,255,.55)">
       <div class="talent-icon">🌀</div>
@@ -266,15 +445,15 @@
       <div class="talent-icon">⚡</div>
       <div class="talent-name">疾风之刃</div>
       <div class="talent-desc">
-        旋风冷却时间 <b>减少</b><br>
-        （6 秒 → 4 秒）
+        旋风冷却时间 <b>减半</b><br>
+        （6 秒 → 3 秒）
       </div>
     </div>
   </div>
 
   <div class="stats" id="screenStats" style="display:none;"></div>
-  <button id="screenBtn" style="display:none;">再 玩 一 次</button>
-  <div class="hint" id="screenHint">点击天赋卡片，开始试炼。</div>
+  <button class="retry-btn" id="screenBtn" style="display:none;">返 回 主 菜 单</button>
+  <div class="hint" id="screenHint">选择模式，开始试炼。</div>
 </div>
 
 <div id="panel">
@@ -377,6 +556,7 @@ function resize() {
   canvas.style.height = H + 'px';
 }
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 200));
 resize();
 
 /* ============================================================
@@ -441,7 +621,6 @@ const ITEM_DEFS = {
   phantom_boots:{ name:'幻影战靴', slot:'boots', icon:'👣', rarity:'epic',  stats:{ speed:110 }, desc:'踏影而行的战靴，速度大幅提升。' },
 };
 
-/* ---- 等级系统：无上限，每级 +20% ---- */
 const LEVEL_BONUS = 0.20;
 
 function getItemStats(item) {
@@ -657,7 +836,7 @@ const TALENT_DEFAULTS = {
   auraBaseRadius: 60,
   auraBaseDamageMul: 2,
   spinBaseCd: 6.0,
-  spinTalentCd: 4.0,
+  spinTalentCd: 3.0
 };
 const TUNING = {
   auraRadius: TALENT_DEFAULTS.auraBaseRadius,
@@ -688,7 +867,8 @@ function applyTalent() {
    游戏状态
 ============================================================ */
 const GAME = {
-  state: 'menu',
+  state: 'mainMenu',
+  mode: 'battle',
   time: 0,
   spawnTimer: 1.0,
   nextBossIdx: 0,
@@ -732,6 +912,14 @@ const player = {
   skillE: { cd: 0, active: false, t: 0, tickTimer: 0, spinAngle: 0 }
 };
 
+const dummy = {
+  x: WORLD.w / 2 + 200,
+  y: WORLD.h / 2,
+  r: 22,
+  maxHp: 300, hp: 300, hpShown: 300,
+  flash: 0, wobble: 0, dead: false, respawn: 0
+};
+
 const enemies = [];
 const swordAuras = [];
 const drops = [];
@@ -768,7 +956,6 @@ function spawnEnemy() {
     dead: false, spawnT: 0,
     isBoss: false,
     palette: enemyPalette(),
-    /* ★ 三种颜色怪伤害固定为 6 / 12 / 18 */
     contactDamage: t < 120 ? 6 : (t < 240 ? 12 : 18)
   });
 }
@@ -852,6 +1039,21 @@ function dropItem(x, y, isBoss) {
   });
 }
 
+function dropFromDummy() {
+  const n = 1 + Math.floor(Math.random() * 2);
+  const pool = ['common', 'good', 'rare', 'epic', 'gold'];
+  for (let i = 0; i < n; i++) {
+    const rarity = pool[Math.floor(Math.random() * pool.length)];
+    const candidates = Object.keys(ITEM_DEFS).filter(k => ITEM_DEFS[k].rarity === rarity);
+    if (!candidates.length) continue;
+    const defId = candidates[Math.floor(Math.random() * candidates.length)];
+    drops.push({
+      x: dummy.x + rand(-40, 40), y: dummy.y + rand(-40, 40),
+      defId, spawnT: 0, bob: Math.random() * TAU, life: 45
+    });
+  }
+}
+
 function pickupDrop(d) {
   const def = ITEM_DEFS[d.defId];
   if (!def) return;
@@ -911,7 +1113,7 @@ function pickupDrop(d) {
 }
 
 /* ============================================================
-   输入
+   输入（键盘 + 鼠标 + 触摸）
 ============================================================ */
 const keys = {};
 window.addEventListener('keydown', e => {
@@ -919,7 +1121,10 @@ window.addEventListener('keydown', e => {
   if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(e.code)) e.preventDefault();
   if (GAME.state !== 'playing') return;
   if (e.code === 'KeyI' || e.code === 'Tab') { e.preventDefault(); togglePanel(); }
-  if (e.code === 'Escape' && panelOpen) togglePanel();
+  if (e.code === 'Escape') {
+    if (panelOpen) togglePanel();
+    else requestReturnToMenu();
+  }
   if (!panelOpen) {
     if (e.code === 'KeyQ' || e.code === 'Digit1') { e.preventDefault(); castSkill1(); }
     if (e.code === 'KeyE') { e.preventDefault(); castSkillE(); }
@@ -929,13 +1134,132 @@ window.addEventListener('keyup', e => { keys[e.code] = false; });
 window.addEventListener('blur', () => {
   for (const k in keys) keys[k] = false;
   mouse.down = false;
+  resetJoystick();
 });
 
+/* 鼠标状态 */
 const mouse = { x: W / 2, y: H / 2, down: false };
-canvas.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
-canvas.addEventListener('mousedown', e => { if (e.button === 0) mouse.down = true; });
-window.addEventListener('mouseup',  e => { if (e.button === 0) mouse.down = false; });
+let mouseActive = false;
+
+canvas.addEventListener('pointermove', e => {
+  if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+    mouseActive = true;
+  }
+});
+canvas.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse') {
+    if (e.button === 0) mouse.down = true;
+  }
+});
+window.addEventListener('pointerup', e => {
+  if (e.pointerType === 'mouse' && e.button === 0) {
+    mouse.down = false;
+  }
+});
 canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+/* ============= 虚拟摇杆 ============= */
+let joystickActive = false;
+let joystickVecX = 0, joystickVecY = 0;
+let joystickPointerId = null;
+let joystickCX = 0, joystickCY = 0;
+
+const joystickEl = document.getElementById('joystick');
+const knobEl = document.getElementById('joystickKnob');
+
+function resetJoystick() {
+  joystickActive = false;
+  joystickVecX = 0;
+  joystickVecY = 0;
+  joystickPointerId = null;
+  if (knobEl) knobEl.style.transform = 'translate(-50%,-50%)';
+}
+
+function handleJoystickMove(cx, cy) {
+  let dx = cx - joystickCX;
+  let dy = cy - joystickCY;
+  const maxR = joystickEl.clientWidth * 0.35;
+  const len = Math.hypot(dx, dy);
+  if (len > maxR) {
+    dx = dx / len * maxR;
+    dy = dy / len * maxR;
+  }
+  joystickVecX = dx / maxR;
+  joystickVecY = dy / maxR;
+  knobEl.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))';
+}
+
+joystickEl.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (joystickPointerId !== null) return;
+  if (GAME.state !== 'playing') return;
+  joystickPointerId = e.pointerId;
+  try { joystickEl.setPointerCapture(e.pointerId); } catch (err) {}
+  const rect = joystickEl.getBoundingClientRect();
+  joystickCX = rect.left + rect.width / 2;
+  joystickCY = rect.top + rect.height / 2;
+  joystickActive = true;
+  handleJoystickMove(e.clientX, e.clientY);
+});
+joystickEl.addEventListener('pointermove', e => {
+  if (e.pointerId !== joystickPointerId) return;
+  e.preventDefault();
+  handleJoystickMove(e.clientX, e.clientY);
+});
+joystickEl.addEventListener('pointerup', e => {
+  if (e.pointerId !== joystickPointerId) return;
+  e.preventDefault();
+  resetJoystick();
+});
+joystickEl.addEventListener('pointercancel', e => {
+  if (e.pointerId !== joystickPointerId) return;
+  resetJoystick();
+});
+
+/* ============= 移动端操作按钮 ============= */
+const btnAttack = document.getElementById('btnAttack');
+const btnQ = document.getElementById('btnQ');
+const btnE = document.getElementById('btnE');
+
+btnAttack.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (GAME.state !== 'playing') return;
+  mouse.down = true;
+});
+btnAttack.addEventListener('pointerup', e => { e.preventDefault(); mouse.down = false; });
+btnAttack.addEventListener('pointercancel', e => { mouse.down = false; });
+btnAttack.addEventListener('pointerleave', e => { if (e.buttons === 0) mouse.down = false; });
+
+btnQ.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (GAME.state === 'playing' && !panelOpen) castSkill1();
+});
+btnE.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (GAME.state === 'playing' && !panelOpen) castSkillE();
+});
+
+/* ============= 顶部按钮：返回主菜单 / 背包 ============= */
+const btnHome = document.getElementById('btnHome');
+const btnBag = document.getElementById('btnBag');
+
+function requestReturnToMenu() {
+  if (GAME.state !== 'playing') return;
+  if (!confirm('返回主菜单？当前进度将丢失。')) return;
+  showMainMenu();
+}
+
+btnHome.addEventListener('click', e => {
+  e.preventDefault();
+  requestReturnToMenu();
+});
+btnBag.addEventListener('click', e => {
+  e.preventDefault();
+  if (GAME.state !== 'playing') return;
+  togglePanel();
+});
 
 function togglePanel() {
   if (GAME.state !== 'playing') return;
@@ -944,6 +1268,7 @@ function togglePanel() {
   if (panelOpen) {
     for (const k in keys) keys[k] = false;
     mouse.down = false;
+    resetJoystick();
     renderPanel();
   } else {
     hideTooltip();
@@ -1039,7 +1364,33 @@ function dealDamage(target, isEnemy, mul, isSkill) {
     target.vx += Math.cos(ang) * kb;
     target.vy += Math.sin(ang) * kb;
     if (target.hp <= 0) killEnemy(target);
+  } else {
+    if (target.hp <= 0) destroyDummy();
   }
+}
+
+function destroyDummy() {
+  dummy.dead = true;
+  dummy.respawn = 1.8;
+  shake = 0.45;
+
+  for (let i = 0; i < 60; i++) {
+    const a = rand(0, TAU), s = rand(60, 340);
+    particles.push({
+      x: dummy.x, y: dummy.y,
+      vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+      life: rand(0.4, 1.1), max: 1.1,
+      size: rand(2, 6),
+      color: Math.random() < 0.5 ? '#c99a5b' : '#7a5630'
+    });
+  }
+  texts.push({
+    x: dummy.x, y: dummy.y - 44,
+    vy: -52, life: 1.3, max: 1.3,
+    text: '击碎！', crit: true
+  });
+
+  dropFromDummy();
 }
 
 function killEnemy(e) {
@@ -1188,6 +1539,14 @@ function updateSwordAuras(dt) {
         burstAuraHit(s);
       }
     }
+    if (GAME.mode === 'train' && !dummy.dead && !s.hit.has(dummy)) {
+      const dx = dummy.x - s.x, dy = dummy.y - s.y;
+      if (Math.hypot(dx, dy) < dummy.r + s.r) {
+        s.hit.add(dummy);
+        dealDamage(dummy, false, SKILL1.damageMul, true);
+        burstAuraHit(s);
+      }
+    }
   }
 }
 
@@ -1247,6 +1606,10 @@ function doSpinDamage() {
     const d = Math.hypot(e.x - player.x, e.y - player.y);
     if (d < R + e.r) dealDamage(e, true, SKILL_E.damageMul, false);
   }
+  if (GAME.mode === 'train' && !dummy.dead) {
+    const d = Math.hypot(dummy.x - player.x, dummy.y - player.y);
+    if (d < R + dummy.r) dealDamage(dummy, false, SKILL_E.damageMul, false);
+  }
 }
 
 function updateSkillE(dt) {
@@ -1298,16 +1661,49 @@ function processAttackHits() {
   const R = currentRange();
   const tolBase = ATK.arc * 0.5;
 
-  for (const t of enemies) {
-    if (t.dead || player.atk.hit.has(t)) continue;
+  function checkTarget(t) {
+    if (t.dead || player.atk.hit.has(t)) return;
     const dx = t.x - player.x, dy = t.y - player.y;
     const dist = Math.hypot(dx, dy);
-    if (dist > R + t.r) continue;
+    if (dist > R + t.r) return;
     const ang = Math.atan2(dy, dx);
     const tol = tolBase + Math.atan2(t.r, Math.max(dist, 1));
     if (Math.abs(angleDiff(ang, player.angle)) < tol) {
       player.atk.hit.add(t);
-      dealDamage(t, true, 1, false);
+      dealDamage(t, t !== dummy, 1, false);
+    }
+  }
+
+  for (const t of enemies) checkTarget(t);
+  if (GAME.mode === 'train' && !dummy.dead) checkTarget(dummy);
+}
+
+/* ============================================================
+   木桩更新
+============================================================ */
+function updateDummy(dt) {
+  if (GAME.mode !== 'train') return;
+  if (dummy.flash > 0)  dummy.flash -= dt;
+  if (dummy.wobble > 0) dummy.wobble = Math.max(0, dummy.wobble - dt * 2.2);
+  dummy.hpShown += (dummy.hp - dummy.hpShown) * Math.min(1, dt * 12);
+
+  if (dummy.dead) {
+    dummy.respawn -= dt;
+    if (dummy.respawn <= 0) {
+      dummy.dead = false;
+      dummy.hp = dummy.maxHp;
+      dummy.hpShown = dummy.maxHp;
+      dummy.flash = 0;
+      dummy.wobble = 0;
+      for (let i = 0; i < 24; i++) {
+        const a = rand(0, TAU), s = rand(40, 130);
+        particles.push({
+          x: dummy.x, y: dummy.y,
+          vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+          life: rand(0.3, 0.6), max: 0.6,
+          size: rand(2, 4), color: '#a8e06b'
+        });
+      }
     }
   }
 }
@@ -1333,31 +1729,41 @@ function update(dt) {
   if (player.skill1.cd > 0) player.skill1.cd = Math.max(0, player.skill1.cd - dt);
   updateSkillE(dt);
 
-  GAME.spawnTimer -= dt;
-  if (GAME.spawnTimer <= 0) {
-    const t = GAME.time;
-    const interval = Math.max(0.75, 2.6 - t / 80);
-    GAME.spawnTimer = interval;
-    const normalCount = enemies.filter(e => !e.dead && !e.isBoss).length;
-    if (normalCount < 110) {
-      const batch = 1 + Math.floor(t / 30);
-      for (let i = 0; i < batch; i++) spawnEnemy();
+  if (GAME.mode === 'battle') {
+    GAME.spawnTimer -= dt;
+    if (GAME.spawnTimer <= 0) {
+      const t = GAME.time;
+      const interval = Math.max(0.75, 2.6 - t / 80);
+      GAME.spawnTimer = interval;
+      const normalCount = enemies.filter(e => !e.dead && !e.isBoss).length;
+      if (normalCount < 110) {
+        const batch = 1 + Math.floor(t / 30);
+        for (let i = 0; i < batch; i++) spawnEnemy();
+      }
+    }
+
+    if (!GAME.bossActive && GAME.nextBossIdx < BOSS_DEFS.length) {
+      if (GAME.time >= BOSS_DEFS[GAME.nextBossIdx].time) {
+        spawnBoss(GAME.nextBossIdx);
+      }
     }
   }
 
-  if (!GAME.bossActive && GAME.nextBossIdx < BOSS_DEFS.length) {
-    if (GAME.time >= BOSS_DEFS[GAME.nextBossIdx].time) {
-      spawnBoss(GAME.nextBossIdx);
-    }
-  }
-
+  /* 移动输入：键盘 + 摇杆 */
   let ix = 0, iy = 0;
   if (keys['KeyW'] || keys['ArrowUp'])    iy -= 1;
   if (keys['KeyS'] || keys['ArrowDown'])  iy += 1;
   if (keys['KeyA'] || keys['ArrowLeft'])  ix -= 1;
   if (keys['KeyD'] || keys['ArrowRight']) ix += 1;
+
+  /* 摇杆输入叠加（激活时覆盖键盘输入） */
+  if (joystickActive) {
+    ix = joystickVecX;
+    iy = joystickVecY;
+  }
+
   const il = Math.hypot(ix, iy);
-  if (il > 0) { ix /= il; iy /= il; }
+  if (il > 1) { ix /= il; iy /= il; }
 
   const baseSpeed = player.speed + stats.speed;
   const spd = baseSpeed;
@@ -1367,7 +1773,18 @@ function update(dt) {
   player.x = clamp(player.x, player.r, WORLD.w - player.r);
   player.y = clamp(player.y, player.r, WORLD.h - player.r);
 
-  player.angle = Math.atan2((mouse.y + cam.y) - player.y, (mouse.x + cam.x) - player.x);
+  /* 朝向：鼠标优先，否则用摇杆方向 */
+  if (mouseActive) {
+    const mwx = mouse.x + cam.x;
+    const mwy = mouse.y + cam.y;
+    player.angle = Math.atan2(mwy - player.y, mwx - player.x);
+  } else {
+    /* 触摸设备：用摇杆方向 */
+    if (joystickActive && (Math.abs(joystickVecX) > 0.15 || Math.abs(joystickVecY) > 0.15)) {
+      player.angle = Math.atan2(joystickVecY, joystickVecX);
+    }
+    /* 否则保持当前朝向 */
+  }
 
   if (player.atk.cd > 0) player.atk.cd -= dt;
   if ((mouse.down || keys['Space']) && player.atk.cd <= 0 && !player.atk.active) {
@@ -1384,6 +1801,7 @@ function update(dt) {
   processAttackHits();
   updateSwordAuras(dt);
   updateEnemies(dt);
+  updateDummy(dt);
   updateDrops(dt);
   updateEffects(dt);
   updateCamera(dt);
@@ -1848,6 +2266,59 @@ function drawEnemy(e) {
   ctx.restore();
 }
 
+function drawDummy() {
+  if (GAME.mode !== 'train' || dummy.dead) return;
+  const r = dummy.r;
+
+  ctx.beginPath();
+  ctx.ellipse(dummy.x, dummy.y + 8, r * 1.15, r * 0.5, 0, 0, TAU);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fill();
+
+  ctx.save();
+  ctx.translate(dummy.x, dummy.y);
+  if (dummy.wobble > 0) ctx.rotate(Math.sin(time * 42) * dummy.wobble * 0.26);
+
+  const grad = safeRadial(-r * 0.35, -r * 0.35, r * 0.15, 0, 0, r);
+  grad.addColorStop(0,   '#d2ab74');
+  grad.addColorStop(0.7, '#a97c46');
+  grad.addColorStop(1,   '#7d5730');
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
+  ctx.fillStyle = grad; ctx.fill();
+
+  ctx.strokeStyle = 'rgba(90,60,30,0.42)';
+  ctx.lineWidth = 2;
+  [0.72, 0.5, 0.28].forEach(f => {
+    ctx.beginPath(); ctx.arc(0, 0, r * f, 0, TAU); ctx.stroke();
+  });
+  ctx.beginPath(); ctx.arc(0, 0, r * 0.1, 0, TAU);
+  ctx.fillStyle = 'rgba(90,60,30,0.5)'; ctx.fill();
+
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
+  ctx.strokeStyle = '#5b3d1f'; ctx.lineWidth = 3; ctx.stroke();
+
+  if (dummy.flash > 0) {
+    ctx.globalAlpha = (dummy.flash / 0.16) * 0.85;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
+    ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+
+  const ratio = clamp(dummy.hpShown / dummy.maxHp, 0, 1);
+  const bw = 64, bh = 8;
+  const bx = dummy.x - bw / 2, by = dummy.y - r - 28;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  roundRect(bx - 2, by - 2, bw + 4, bh + 4, 4); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.10)';
+  roundRect(bx, by, bw, bh, 3); ctx.fill();
+  ctx.fillStyle = ratio > 0.5 ? '#5ddc6a' : ratio > 0.25 ? '#ffc93c' : '#ff5c4d';
+  roundRect(bx, by, bw * ratio, bh, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+  ctx.lineWidth = 1;
+  roundRect(bx, by, bw, bh, 3); ctx.stroke();
+}
+
 function drawDrop(d) {
   const def = ITEM_DEFS[d.defId];
   if (!def) return;
@@ -1923,7 +2394,7 @@ function drawTexts() {
 }
 
 function drawPlayerHealth() {
-  const x = 22, y = 22, bw = 250, bh = 18;
+  const x = 80, y = 22, bw = 250, bh = 18;
   const ratio = clamp(player.hp / player.maxHp, 0, 1);
 
   ctx.fillStyle = 'rgba(0,0,0,.58)';
@@ -1972,13 +2443,22 @@ function drawGameInfo() {
   ctx.fillStyle = '#eaf5dd';
   ctx.fillText(formatTime(GAME.time), W / 2, 42);
 
+  if (GAME.mode === 'train') {
+    ctx.font = 'bold 12px system-ui, "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,200,100,.85)';
+    ctx.fillText('🎯 训练模式', W / 2, 62);
+  }
+
   ctx.textAlign = 'right';
   ctx.font = 'bold 14px system-ui, "Microsoft YaHei", sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,.55)';
-  ctx.fillText('击杀  ' + GAME.killCount, W - 24, 34);
-  ctx.fillText('掉落  ' + GAME.dropCount, W - 24, 56);
+  if (GAME.mode === 'battle') {
+    ctx.fillText('击杀  ' + GAME.killCount, W - 80, 34);
+  }
+  ctx.fillText('掉落  ' + GAME.dropCount, W - 80, 56);
   ctx.fillStyle = 'rgba(255,220,80,.7)';
-  ctx.fillText('升级  ' + GAME.upgradeCount, W - 24, 78);
+  ctx.fillText('升级  ' + GAME.upgradeCount, W - 80, 78);
 
   if (selectedTalent) {
     ctx.textAlign = 'left';
@@ -1986,10 +2466,10 @@ function drawGameInfo() {
     const tName = selectedTalent === 'aura' ? '🌀 剑气宗师' : '⚡ 疾风之刃';
     const tCol  = selectedTalent === 'aura' ? '#7fd0ff' : '#a8e06b';
     ctx.fillStyle = 'rgba(0,0,0,.5)';
-    roundRect(20, 50, 108, 24, 6); ctx.fill();
+    roundRect(80, 50, 108, 24, 6); ctx.fill();
     ctx.fillStyle = tCol;
     ctx.textBaseline = 'middle';
-    ctx.fillText(tName, 32, 63);
+    ctx.fillText(tName, 92, 63);
     ctx.textBaseline = 'alphabetic';
   }
 
@@ -2002,7 +2482,7 @@ function drawBossBar() {
   if (boss.dead) return;
 
   const bw = Math.min(620, W - 100), bh = 22;
-  const bx = W / 2 - bw / 2, by = 66;
+  const bx = W / 2 - bw / 2, by = 100;
   const ratio = clamp(boss.hpShown / boss.maxHp, 0, 1);
 
   ctx.save();
@@ -2042,6 +2522,7 @@ function drawBossBar() {
 }
 
 function drawNextBossTimer() {
+  if (GAME.mode !== 'battle') return;
   if (GAME.bossActive) return;
   if (GAME.nextBossIdx >= BOSS_DEFS.length) return;
 
@@ -2172,6 +2653,10 @@ function iconSpin(c) {
 }
 
 function drawSkillBar() {
+  /* 移动端按钮已经显示了技能，桌面端才画技能条 */
+  const isTouch = window.matchMedia('(pointer: coarse)').matches;
+  if (isTouch) return;
+
   const bw = 74, bh = 74, gap = 12;
   const totalW = bw * 2 + gap;
   const startX = W / 2 - totalW / 2;
@@ -2195,9 +2680,12 @@ function drawHUD() {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
 
+  const isTouch = window.matchMedia('(pointer: coarse)').matches;
   ctx.font = '13.5px system-ui, "Microsoft YaHei", sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.fillText('WASD 移动 · 鼠标左键 / 空格 攻击 · Q/1 剑气 · E 旋风 · I 背包', 20, H - 20);
+  if (!isTouch) {
+    ctx.fillText('WASD 移动 · 鼠标左键 / 空格 攻击 · Q/1 剑气 · E 旋风 · I 背包 · ESC 返回', 20, H - 20);
+  }
 
   ctx.textAlign = 'right';
   ctx.fillStyle = 'rgba(255,255,255,0.32)';
@@ -2205,7 +2693,7 @@ function drawHUD() {
   let line = '攻击 +' + stats.atk + '  ·  暴击 ' + Math.round(stats.crit * 100) + '%' +
              '  ·  范围 +' + stats.range + '  ·  速度 +' + stats.speed;
   if (stats.lifesteal > 0) line += '  ·  吸血 ' + Math.round(stats.lifesteal * 100) + '%';
-  ctx.fillText(line, W - 20, H - 20);
+  ctx.fillText(line, W - 80, H - 20);
 
   ctx.restore();
 }
@@ -2249,6 +2737,7 @@ function render() {
 
   for (const d of drops) drawDrop(d);
   for (const e of enemies) drawEnemy(e);
+  drawDummy();
   drawPlayer();
   for (const s of swordAuras) drawSwordAura(s);
   drawParticles();
@@ -2274,33 +2763,78 @@ const screenSub   = document.getElementById('screenSub');
 const screenStats = document.getElementById('screenStats');
 const screenBtn   = document.getElementById('screenBtn');
 const screenHint  = document.getElementById('screenHint');
-const talentArea  = document.getElementById('talentArea');
+const mainMenuArea = document.getElementById('mainMenuArea');
+const talentArea   = document.getElementById('talentArea');
 
-const MENU_HTML =
-  'WASD 移动 · 鼠标左键 / 空格 攻击<br>' +
-  '<b>Q</b> 剑气 &nbsp;·&nbsp; <b>E</b> 旋风 &nbsp;·&nbsp; <b>I</b> 背包 / 装备<br><br>' +
+const MAIN_MENU_HTML =
+  'WASD 移动 · 鼠标左键 / 空格 攻击 · <b>Q</b> 剑气 · <b>E</b> 旋风 · <b>I</b> 背包<br><br>' +
+  '选择 <b>开始游戏</b> 挑战完整流程，或进入 <b>训练模式</b> 熟悉操作。';
+
+const BATTLE_TALENT_HTML =
   '怪物源源不断袭来，每 <b>120 秒</b> 刷新一位 <b>BOSS</b>。<br>' +
   '击杀 <b>第三位 BOSS</b> 即为胜利。<br>' +
   '捡到<b>相同装备</b>会升级（每级 +20% 属性，<b>无上限</b>）。';
 
-function showMenuScreen() {
-  GAME.state = 'menu';
+const TRAIN_TALENT_HTML =
+  '训练模式：只有木桩，不会刷新怪物和 BOSS。<br>' +
+  '打木桩可以练习连招、测试天赋、刷装备。<br>' +
+  '木桩被击碎后会立即重生并掉落装备。';
+
+function updateTopBtns() {
+  const show = GAME.state === 'playing';
+  btnHome.style.display = show ? 'flex' : 'none';
+  btnBag.style.display  = show ? 'flex' : 'none';
+}
+
+function showMainMenu() {
+  GAME.state = 'mainMenu';
   selectedTalent = null;
+  panelOpen = false;
+  panelEl.classList.remove('open');
+  resetJoystick();
+  mouse.down = false;
 
   screenTitle.textContent = '幸存者试炼';
   screenTitle.className = '';
-  screenSub.innerHTML = MENU_HTML;
+  screenSub.innerHTML = MAIN_MENU_HTML;
+  mainMenuArea.style.display = 'flex';
+  talentArea.style.display = 'none';
   screenStats.style.display = 'none';
   screenStats.innerHTML = '';
   screenBtn.style.display = 'none';
+  screenHint.textContent = '选择模式，开始试炼。';
+  screenEl.classList.remove('hidden');
+
+  updateTopBtns();
+}
+
+function showTalentSelect() {
+  GAME.state = 'talentSelect';
+  selectedTalent = null;
+
+  if (GAME.mode === 'train') {
+    screenTitle.textContent = '训练模式';
+    screenTitle.className = 'win';
+    screenSub.innerHTML = TRAIN_TALENT_HTML;
+  } else {
+    screenTitle.textContent = '幸存者试炼';
+    screenTitle.className = '';
+    screenSub.innerHTML = BATTLE_TALENT_HTML;
+  }
+  mainMenuArea.style.display = 'none';
   talentArea.style.display = 'flex';
+  screenStats.style.display = 'none';
+  screenBtn.style.display = 'none';
   screenHint.textContent = '点击天赋卡片，开始试炼。';
   screenEl.classList.remove('hidden');
+
+  updateTopBtns();
 }
 
 function startGame() {
   resetGame();
   screenEl.classList.add('hidden');
+  updateTopBtns();
 }
 
 function showEndScreen(title, sub, statsHtml, extraClass, hintText) {
@@ -2309,23 +2843,34 @@ function showEndScreen(title, sub, statsHtml, extraClass, hintText) {
   screenSub.innerHTML = sub;
   screenStats.style.display = 'block';
   screenStats.innerHTML = statsHtml;
-  screenBtn.textContent = '再 玩 一 次';
+  screenBtn.textContent = '返 回 主 菜 单';
   screenBtn.style.display = 'inline-block';
+  mainMenuArea.style.display = 'none';
   talentArea.style.display = 'none';
   screenHint.textContent = hintText;
   screenEl.classList.remove('hidden');
+
+  updateTopBtns();
 }
+
+mainMenuArea.addEventListener('click', e => {
+  const btn = e.target.closest('.menu-btn');
+  if (!btn) return;
+  if (GAME.state !== 'mainMenu') return;
+  GAME.mode = btn.dataset.mode;
+  showTalentSelect();
+});
 
 talentArea.addEventListener('click', e => {
   const card = e.target.closest('.talent-card');
   if (!card) return;
-  if (GAME.state !== 'menu') return;
+  if (GAME.state !== 'talentSelect') return;
   selectedTalent = card.dataset.talent;
   startGame();
 });
 
 screenBtn.addEventListener('click', () => {
-  showMenuScreen();
+  showMainMenu();
 });
 
 function resetGame() {
@@ -2352,6 +2897,17 @@ function resetGame() {
   texts.length = 0;
   shake = 0;
   time = 0;
+  mouse.down = false;
+  resetJoystick();
+
+  dummy.x = WORLD.w / 2 + 200;
+  dummy.y = WORLD.h / 2;
+  dummy.hp = dummy.maxHp;
+  dummy.hpShown = dummy.maxHp;
+  dummy.flash = 0;
+  dummy.wobble = 0;
+  dummy.dead = false;
+  dummy.respawn = 0;
 
   applyTalent();
 
@@ -2385,6 +2941,7 @@ function resetGame() {
 
 function winGame() {
   GAME.state = 'won';
+  updateTopBtns();
   const statsHtml =
     '存活时间 &nbsp;<span>' + formatTime(GAME.time) + '</span><br>' +
     '击杀数 &nbsp;<span>' + GAME.killCount + '</span><br>' +
@@ -2398,6 +2955,7 @@ function loseGame() {
   GAME.state = 'lost';
   player.dead = true;
   shake = 0.7;
+  updateTopBtns();
   for (let i = 0; i < 40; i++) {
     const a = rand(0, TAU), s = rand(60, 280);
     particles.push({
@@ -2458,7 +3016,7 @@ function loop(now) {
 computeStats();
 renderPanel();
 snapCamera();
-showMenuScreen();
+showMainMenu();
 requestAnimationFrame(loop);
 </script>
 </body>
