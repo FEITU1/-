@@ -297,9 +297,10 @@
     #mobileUI{display:block;}
   }
 
+  /* ★ 摇杆改到右下角 */
   #joystick{
     position:fixed;
-    left:28px;
+    right:28px;
     bottom:28px;
     width:160px;height:160px;
     z-index:35;
@@ -548,23 +549,20 @@ function getItemStats(item) {
   return out;
 }
 
-/* ★ 物品评分（用于自动装备判断）
-   优先级：吸血 > 攻击 > 范围 > 速度 > 暴击
-   大权重乘法：权重之间拉开数量级，确保严格按优先级比较 */
+/* 物品评分：吸血 > 攻击 > 范围 > 速度 > 暴击 */
 function scoreItem(item) {
   const def = ITEM_DEFS[item.defId];
   if (!def) return 0;
   const st = getItemStats(item);
   let score = 0;
-  score += (st.lifesteal || 0) * 1e10;   // 吸血最高优先
-  score += (st.atk       || 0) * 1e5;    // 攻击第二
-  score += (st.range     || 0) * 100;    // 范围第三
-  score += (st.speed     || 0) * 1;      // 速度第四
-  score += (st.crit      || 0) * 0.001;  // 暴击最后
+  score += (st.lifesteal || 0) * 1e10;
+  score += (st.atk       || 0) * 1e5;
+  score += (st.range     || 0) * 100;
+  score += (st.speed     || 0) * 1;
+  score += (st.crit      || 0) * 0.001;
   return score;
 }
 
-/* ★ 自动装备最强装备 */
 function autoEquipBest(silent) {
   const slots = ['weapon', 'helmet', 'armor', 'boots'];
   let changed = false;
@@ -1033,7 +1031,6 @@ function pickupDrop(d) {
       color: leveled ? '#ffd94a' : col
     });
   }
-  /* ★ 拾取后自动评估并换上最强装备 */
   autoEquipBest(false);
   if (panelOpen) renderPanel();
 }
@@ -1520,8 +1517,6 @@ function autoCombat() {
       player.angle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
     }
   }
-  /* ★ 自动普攻：触发范围扩大到 2 倍，应对剑气/旋风的击退
-       实际命中判定仍按真实攻击范围在 processAttackHits 里处理 */
   if (player.atk.cd <= 0 && !player.atk.active && nearest) {
     const R = currentRange();
     const dist = Math.hypot(nearest.x - player.x, nearest.y - player.y);
@@ -1607,7 +1602,6 @@ function update(dt) {
   if (player.hurtFlash > 0) player.hurtFlash -= dt;
   if (player.invuln > 0) player.invuln -= dt;
   if (player.skill1.cd > 0) player.skill1.cd = Math.max(0, player.skill1.cd - dt);
-  /* ★ 修复：补回普攻冷却递减（之前漏掉导致普攻只触发一次） */
   if (player.atk.cd > 0) player.atk.cd = Math.max(0, player.atk.cd - dt);
   updateSkillE(dt);
 
@@ -2671,7 +2665,6 @@ function resetGame() {
   equipped.boots = null;
   computeStats();
   renderPanel();
-  /* 初始也自动装备最强（会把基础四件穿上） */
   autoEquipBest(true);
   panelOpen = false;
   panelEl.classList.remove('open');
